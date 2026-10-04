@@ -1,0 +1,26 @@
+# ILLUSTRATIVE ONLY - replace with your state's current ToD tariff order before using any numbers.
+hour,period,rate_inr_per_kwh
+0,off_peak,6.0
+1,off_peak,6.0
+2,off_peak,6.0
+3,off_peak,6.0
+4,off_peak,6.0
+5,off_peak,6.0
+6,normal,7.5
+7,normal,7.5
+8,normal,7.5
+9,solar,6.8
+10,solar,6.8
+11,solar,6.8
+12,solar,6.8
+13,solar,6.8
+14,solar,6.8
+15,solar,6.8
+16,normal,7.5
+17,peak,9.0
+18,peak,9.0
+19,peak,9.0
+20,peak,9.0
+21,normal,7.5
+22,off_peak,6.0
+23,off_peak,6.0
