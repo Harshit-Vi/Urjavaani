@@ -1,151 +1,199 @@
 # UrjaVaani: Hear. Schedule. Prove.
 
-A wiring-free energy and carbon platform starter for Indian SME manufacturers.
+A wiring-free energy and carbon platform for Indian SME manufacturers.
+Built for **Yuva Yoddha Hackathon, Challenge 04: Smart Manufacturing (Industrial Energy & Process Efficiency)**.
 
-Built for **Yuva Yoddha Hackathon Challenge 04 (Smart Manufacturing: Industrial Energy & Process Efficiency)**.
-
-| Module | Purpose |
+| Module | What it does |
 |---|---|
-| Hear | Estimate per-machine kW/kWh and detect leaks/fault cues from sound and vibration. |
-| Schedule | Shift flexible loads to lower-tariff windows without missing deadlines. |
-| Prove | Compute per-batch Scope 1 + 2 emissions and produce Carbon Passport outputs. |
+| **Hear** | Estimates per-machine load, kWh, air leaks and early faults from sound and vibration (no wiring, no shutdown) |
+| **Schedule** | Plans the day around time-of-day tariffs, order deadlines and solar hours, and sends the plan on WhatsApp |
+| **Prove** | Converts measured batch energy into a per-batch carbon footprint (GHG Protocol Scope 1 + 2) and a QR-coded Carbon Passport |
 
-> Config values in `config/` are illustrative only and must be replaced with plant/state-approved current values before use.
+**Team:** Harshit Singh (team lead), Mohita Nagar (CSE core), VIT Bhopal
 
-India's industry uses roughly 35-40% of national energy demand, energy can be 15-30% of production cost for many SMEs, many plants still lack real-time machine-level monitoring, and exporters increasingly need to prove product-linked emissions in a verifiable way.
+> Status: scaffold. Numbers in `config/` are illustrative and must be replaced with current tariff and emission-factor sources.
+> Savings figures in the pitch are modelled targets until validated by the prototype.
+
+---
+
+## Problem in one paragraph
+
+Industry uses 35-40% of India's energy, and energy is 15-30% of production cost in many SME sectors, yet most SMEs have no real-time energy monitoring. Smart meters are costly and hard to install, so leaks, idle running and peak-tariff operation go unnoticed, and exporters cannot easily prove emissions to buyers.
+
+## Architecture (summary)
 
 ```mermaid
 flowchart LR
-    A[Machines] --> B[Edge node (ESP32 + mic or phone)] --> C[Plant gateway (offline-first)] --> D[Cloud services (acoustic energy model, tariff-aware scheduler, carbon engine)] --> E[Outputs (WhatsApp/SMS/voice, web dashboard, Carbon Passport PDF + QR, Tally/ERP export)]
+  A[Machines] -->|sound / vibration| B[Edge node: ESP32 + mic or phone]
+  B -->|features only, MQTT| C[Plant gateway: Pi / mini PC, offline-first]
+  C --> D[Cloud services]
+  D --> D1[Acoustic energy model]
+  D --> D2[Tariff-aware scheduler]
+  D --> D3[Carbon engine]
+  D2 --> E[WhatsApp / SMS / voice]
+  D1 --> F[Web dashboard]
+  D3 --> G[Carbon Passport PDF + QR]
+  D --> H[Tally / ERP export]
 ```
+
+Details: [`docs/architecture.md`](docs/architecture.md).
 
 ## Repository structure
 
-```text
+```
 urjavaani/
-├── README.md                         # Project overview and phased plan
-├── requirements.txt                  # Python dependencies
-├── pytest.ini                        # Pytest configuration
-├── .gitignore                        # Ignore rules for local artifacts and data dumps
-├── config/                           # Illustrative tariff and emission factor inputs
-│   ├── tariff_example.csv            # Example ToD tariff slab table
-│   └── emission_factors_example.csv  # Example hourly grid emission factor table
-├── data/                             # Data folders
-│   ├── raw/.gitkeep                  # Placeholder for raw files (not committed)
-│   ├── processed/.gitkeep            # Placeholder for processed files (not committed)
-│   └── external/README.md            # Notes for third-party datasets/tables
-├── docs/                             # Architecture, assumptions, baseline and data docs
-│   ├── architecture.md               # Layered design and data flow
-│   ├── assumptions.md                # Assumptions register
-│   ├── baseline-methodology.md       # Baseline and guardrail definitions
-│   ├── data-sources.md               # Data need register
-│   ├── diagrams/.gitkeep             # Placeholder for diagrams
-│   └── design/.gitkeep               # Placeholder for design notes
-├── edge/firmware/README.md           # Firmware scope note
-├── notebooks/.gitkeep                # Placeholder for notebooks
-├── pitch/.gitkeep                    # Placeholder for pitch assets
-├── scripts/.gitkeep                  # Placeholder for helper scripts
-├── src/urjavaani/                    # Python package source
-│   ├── __init__.py                   # Package marker
-│   ├── sensing/                      # Hear module stubs
-│   ├── scheduler/                    # Schedule baseline planner
-│   ├── carbon/                       # Prove footprint engine/passport stub
-│   ├── notify/                       # WhatsApp formatter/mock sender
-│   ├── api/                          # FastAPI app
-│   └── simulation/                   # Synthetic data generation
-├── dashboard/app.py                  # Streamlit dashboard scaffold
-└── tests/                            # Baseline tests for scheduler/carbon
+├── README.md
+├── requirements.txt
+├── pytest.ini
+├── .gitignore
+├── config/                     # tariff + emission-factor tables (illustrative examples)
+├── data/
+│   ├── raw/                    # recordings, meter logs (not committed)
+│   ├── processed/              # features, cleaned datasets (not committed)
+│   └── external/               # public datasets and reference tables (not committed)
+├── docs/
+│   ├── architecture.md         # system design and data flows
+│   ├── assumptions.md          # every assumption, with source or "to validate"
+│   ├── baseline-methodology.md # how SEC and emissions baselines are defined
+│   ├── data-sources.md         # datasets, tariff orders, emission factors
+│   ├── diagrams/               # architecture / deployment diagrams
+│   └── design/                 # dashboard wireframes, WhatsApp message mock-ups
+├── edge/
+│   └── firmware/               # intended ESP32 + microphone node (notes only)
+├── notebooks/                  # exploration and model experiments
+├── pitch/                      # presentation deck
+├── scripts/                    # data generation, evaluation, demo runners
+├── src/urjavaani/
+│   ├── sensing/                # Hear: features.py, energy_model.py
+│   ├── scheduler/              # Schedule: planner.py
+│   ├── carbon/                 # Prove: engine.py, passport.py
+│   ├── notify/                 # whatsapp.py (mock first)
+│   ├── api/                    # FastAPI service
+│   └── simulation/             # synthetic plant data
+├── dashboard/                  # Streamlit app
+└── tests/
 ```
 
 ## Quick start
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python -m pytest -q
-uvicorn urjavaani.api.main:app --reload
-streamlit run dashboard/app.py
+pytest                                               # runs the starter tests
+uvicorn urjavaani.api.main:app --reload --app-dir src   # API
+streamlit run dashboard/app.py                          # dashboard
 ```
+
+---
 
 ## Work phases
 
+Phases are sequential in intent but overlap in practice. Durations are relative; stretch or compress them to your submission deadline. The suggested split is a starting point: Harshit leads architecture, scheduler and integration; Mohita leads the sensing model and data. Both review the carbon logic and the write-up.
+
 ### Phase 0: Foundations and research
-- **Goal:** Define scope, success metrics, and reference architecture.
-- **Tasks:** Confirm use-cases, map stakeholders, and lock assumptions.
-- **Deliverables:** Problem framing, architecture draft, assumptions register.
-- **Exit criteria:** Team agrees on scope and measurable targets.
+**Goal:** agree on scope, sources and definitions before building.
+- Set up the repo, branches and issue board.
+- Choose one target sector and machine set (for example a foundry or plastics unit: motor, air compressor, blower, furnace).
+- Collect reference data: your state's current time-of-day tariff order, the latest CEA grid emission factor, BEE benchmarks for the chosen sector.
+- Review prior work on acoustic motor monitoring and factory load shifting so the write-up cites it honestly.
+- Fix the **baseline definition** (see `docs/baseline-methodology.md`).
+
+**Deliverables:** `docs/assumptions.md`, `docs/data-sources.md`, `docs/baseline-methodology.md`.
+**Exit criteria:** tariff table and emission factor are sourced; sector and machines are chosen; baseline metric (kWh per unit of good product) is written down.
 
 ### Phase 1: Data and simulation
-- **Goal:** Stand up reproducible data inputs for development.
-- **Tasks:** Collect sample schemas and generate synthetic baselines.
-- **Deliverables:** Data folders, synthetic generator, illustrative configs.
-- **Exit criteria:** Baseline runs are reproducible and documented.
+**Goal:** have data to build and demonstrate against, even without a factory.
+- Download public machine-sound datasets (see `docs/data-sources.md`) and record your own samples (fan or motor at several speeds with a phone).
+- If possible, log a reference clamp-meter reading for each recording.
+- Build a synthetic plant simulator: hourly kW per machine, shifts, orders, with an idle/leak waste component.
+- Produce the **baseline week**: energy, cost, emissions and kWh per unit.
 
-### Phase 2: Hear (acoustic energy model)
-- **Goal:** Build machine-level kW estimation from sound/vibration features.
-- **Tasks:** Extract features, calibrate to clamp-meter readings, train regressor.
-- **Deliverables:** Feature extraction pipeline and calibrated model.
-- **Exit criteria:** Held-out error is near the +/-10-15% target after calibration.
+**Deliverables:** `src/urjavaani/simulation/`, `data/processed/` datasets, a baseline report in `notebooks/`.
+**Exit criteria:** a reproducible baseline week with total kWh, cost and kg CO2e; clearly labelled synthetic vs real data.
 
-### Phase 3: Schedule (tariff-aware planner)
-- **Goal:** Shift flexible jobs to lower-cost windows within deadlines.
-- **Tasks:** Implement greedy baseline, then upgrade to constrained optimization.
-- **Deliverables:** Daily plan output and estimated savings.
-- **Exit criteria:** Planner respects earliest start/latest end constraints.
+### Phase 2: Hear, acoustic energy model
+**Goal:** estimate per-machine kW and detect waste from sound.
+- Implement feature extraction in `sensing/features.py` (spectral and band-energy features, line-frequency harmonics).
+- Train a regressor for kW from features, with one-point calibration against a clamp-meter reading.
+- Add simple anomaly flags: air-leak signature, idle running, abnormal vibration.
+- Report accuracy honestly (MAPE on held-out data) and state where it is not good enough.
 
-### Phase 4: Prove (Carbon Passport)
-- **Goal:** Compute per-batch Scope 1 + 2 and generate passport output.
-- **Tasks:** Aggregate energy by hour, apply emission factors, build PDF + QR.
-- **Deliverables:** Batch footprint dictionary and passport artifact.
-- **Exit criteria:** Footprint outputs are traceable and reproducible.
+**Deliverables:** `sensing/` module, evaluation notebook, accuracy table.
+**Exit criteria:** documented error on held-out data; target roughly +/-10-15% after calibration (adjust the claim to what you actually measure).
 
-### Phase 5: Integration and UI
-- **Goal:** Connect APIs, notifications, and dashboard views.
-- **Tasks:** Wire scheduler/carbon outputs into FastAPI and Streamlit.
-- **Deliverables:** End-to-end demo flow.
-- **Exit criteria:** Operator can run one daily planning and reporting cycle.
+### Phase 3: Schedule, tariff-aware planner
+**Goal:** cut cost by moving flexible loads without missing deadlines.
+- Model jobs (kW, duration, earliest start, deadline) and the tariff table.
+- Start from the greedy cheapest-window planner in `scheduler/planner.py`, then upgrade to OR-Tools CP-SAT with constraints (shift hours, machine conflicts, peak-demand cap, solar window).
+- Compare the optimised plan with the baseline week from Phase 1.
+
+**Deliverables:** `scheduler/` module, tests, cost and kWh comparison.
+**Exit criteria:** every job still meets its deadline (throughput preserved); cost reduction is computed against the Phase 1 baseline.
+
+### Phase 4: Prove, Carbon Passport
+**Goal:** turn measured energy into a buyer-ready footprint.
+- Finish `carbon/engine.py`: Scope 2 from hourly kWh and emission factors, Scope 1 from fuel inputs, kg CO2e per unit.
+- Build `carbon/passport.py`: PDF with batch details, method, factors used, and a QR code linking to a verification page.
+- Document the method and its limits (location-based Scope 2, emission factor source and year).
+
+**Deliverables:** carbon engine, sample passport PDF, method note.
+**Exit criteria:** a sample batch produces a passport whose numbers can be traced back to inputs and factors.
+
+### Phase 5: Integration and user interface
+**Goal:** one working loop a judge can see.
+- Wire the modules through the FastAPI service.
+- Build the Streamlit dashboard: per-machine energy, tomorrow's plan, savings tracker, Carbon Passport download.
+- Implement the daily plan message in `notify/whatsapp.py` (console mock first; WhatsApp Business API or sandbox if available).
+- Add Tally/ERP-friendly CSV export.
+
+**Deliverables:** running API and dashboard, sample WhatsApp message output, CSV export.
+**Exit criteria:** from a data file, one command produces the plan, the savings number and the passport.
 
 ### Phase 6: Evaluation and quantified impact
-- **Goal:** Measure improvements against baseline.
-- **Tasks:** Compare before/after SEC, cost, emissions, and peak demand.
-- **Deliverables:** Quantified impact summary with guardrail checks.
-- **Exit criteria:** Throughput/rejection guardrails remain acceptable.
+**Goal:** produce the numbers the challenge asks for.
+- Run baseline vs optimised for the simulated plant (and real samples where available).
+- Report specific energy consumption (kWh per unit of good product), cost per unit and emissions intensity, with throughput and rejection rate unchanged.
+- Run sensitivity checks (tariff structure, share of flexible load, model error) and state assumptions.
+- Compute installation cost and payback using the hardware list and subscription price.
+
+**Deliverables:** `notebooks/evaluation.ipynb`, results table and charts, payback worksheet.
+**Exit criteria:** one clear headline result with the baseline, method and assumptions stated; no figure without a source or a stated model.
 
 ### Phase 7: Submission artefacts
-- **Goal:** Prepare hackathon-ready submission package.
-- **Tasks:** Finalize deck, demo script, architecture visuals, and metrics.
-- **Deliverables:** Complete submission artefacts.
-- **Exit criteria:** Submission checklist is fully complete.
+**Goal:** package everything the hackathon asks for.
+- Solution write-up: mechanism, key assumptions, fit with Indian SME conditions.
+- Architecture diagram and deployment schematic (`docs/diagrams/`).
+- Dashboard wireframes and data model (`docs/design/`).
+- Deployment and business-model plan: target segment, installation cost, payback, scale-up.
+- Update the deck in `pitch/` with final measured numbers; record a short demo video.
 
-### Phase 8: Pilot and scale
-- **Goal:** Plan rollout beyond prototype.
-- **Tasks:** Define deployment, support, and scale roadmap.
-- **Deliverables:** Stage-wise rollout plan.
-- **Exit criteria:** Pilot and scale milestones are approved.
+**Deliverables:** write-up, diagrams, wireframes, updated deck, demo video link.
+**Exit criteria:** every submission item in the Challenge 04 brief is covered and cross-checked against this README.
 
-| Stage | Timeline |
-|---|---|
-| Prototype | 0-2 months |
-| Pilot | 2-6 months |
-| Launch | 6-12 months |
-| Scale | 12-24 months |
+### Phase 8: Pilot and scale (post-hackathon roadmap)
+| Stage | Timeframe | Focus |
+|---|---|---|
+| Prototype | 0-2 months | Working models, scheduler, carbon engine, dashboard |
+| Pilot | 2-6 months | 3-5 plants in one cluster; calibrate, measure baseline, validate savings |
+| Launch | 6-12 months | Subscription rollout, Carbon Passport for exporters, association partnerships |
+| Scale | 12-24 months | Multiple clusters and states, federated benchmarking, retrofit marketplace |
 
-## Risks and mitigations
+---
+
+## Risks and how we handle them
 
 | Risk | Mitigation |
 |---|---|
-| Acoustic accuracy may drift across machines. | Re-calibrate with periodic clamp-meter checks and retraining windows. |
-| No real factory data early in development. | Start with synthetic data and document assumptions until pilot data arrives. |
-| Prior art exists in energy analytics space. | Differentiate with wiring-free deployment and per-batch carbon proof. |
-| Tariffs and emission factors change over time. | Treat config tables as versioned inputs and refresh on schedule. |
-| Scope creep across modules. | Phase-gate features and enforce exit criteria before expansion. |
+| Acoustic estimates are less accurate than a meter | One-point calibration; report measured error; use for ranking waste and scheduling, not billing |
+| No real factory data | Public datasets, own recordings, clearly labelled synthetic simulation |
+| Prior art exists for each component | Cite it; claim the integrated SME package, not a "first" |
+| Tariffs and emission factors change | Keep them in `config/`, source and date them |
+| Scope creep | Finish Phases 1-6 before any extras such as federated benchmarking |
 
 ## Contributing workflow
+- Branch per phase or feature (`phase-2-acoustic-model`); open a pull request; the other member reviews.
+- Keep data out of git (see `.gitignore`); share links to datasets in `docs/data-sources.md`.
+- Add or update tests when changing `carbon/` or `scheduler/`.
 
-1. Create one branch per phase or scoped task.
-2. Open a pull request and complete review before merge.
-3. Keep raw/processed data out of git.
-4. Add or update tests when changing `carbon/` or `scheduler/`.
-
-Not yet chosen. Add a LICENSE file before making the repository public.
+## License
+Apache2.0
