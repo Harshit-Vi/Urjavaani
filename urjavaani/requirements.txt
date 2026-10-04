@@ -1,0 +1,13 @@
+numpy
+pandas
+scipy
+scikit-learn
+librosa
+ortools
+fastapi
+uvicorn
+streamlit
+plotly
+qrcode[pil]
+reportlab
+pytest
